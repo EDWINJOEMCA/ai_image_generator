@@ -1,0 +1,217 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Image Generator</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #141e30, #243b55);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Card */
+.container {
+  text-align: center;
+  background: rgba(255,255,255,0.05);
+  padding: 40px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  width: 500px;
+  box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+
+/* Input */
+input {
+  width: 80%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+/* Button */
+button {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 10px;
+  background: #00c6ff;
+  color: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: gray;
+  cursor: not-allowed;
+}
+
+/* Image */
+img {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 350px;
+  border-radius: 15px;
+  display: none;
+}
+
+/* Download */
+#downloadBtn {
+  display: none;
+  margin-top: 15px;
+}
+
+/* Loader overlay */
+#loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+/* Spinner */
+.spinner {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #00c6ff;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #333;
+  padding: 15px 20px;
+  border-radius: 10px;
+  display: none;
+}
+
+.success { background: #28a745; }
+.error { background: #dc3545; }
+
+</style>
+</head>
+
+<body>
+
+<!-- Loader -->
+<div id="loader">
+  <div class="spinner"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<div class="container">
+  <h1>✨ AI Image Generator</h1>
+
+  <form id="generateForm">
+    {% csrf_token %}
+    <input type="text" id="prompt" name="prompt" placeholder="Describe your image..." required />
+    <br>
+    <button type="submit" id="generateBtn">Generate</button>
+  </form>
+
+  <img id="output" />
+
+  <br>
+  <a id="downloadBtn" download="ai_image.png">
+    <button type="button">Download</button>
+  </a>
+</div>
+
+<script>
+const form = document.getElementById("generateForm");
+const promptInput = document.getElementById("prompt");
+const btn = document.getElementById("generateBtn");
+const loader = document.getElementById("loader");
+const toast = document.getElementById("toast");
+const img = document.getElementById("output");
+const downloadBtn = document.getElementById("downloadBtn");
+
+// Toast function
+function showToast(message, type="success") {
+  toast.innerText = message;
+  toast.className = type;
+  toast.style.display = "block";
+
+  setTimeout(() => {
+    toast.style.display = "none";
+  }, 3000);
+}
+
+form.addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const prompt = promptInput.value.trim();
+  if (!prompt) return;
+
+  // 🔒 Disable UI
+  btn.disabled = true;
+  promptInput.disabled = true;
+  loader.style.display = "flex";
+
+  img.style.display = "none";
+  downloadBtn.style.display = "none";
+
+  try {
+    const formData = new FormData();
+    formData.append("prompt", prompt);
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    const res = await fetch("/generate/", {
+      method: "POST",
+      headers: { "X-CSRFToken": csrfToken },
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (data.image_url) {
+      img.src = data.image_url;
+      img.style.display = "block";
+
+      downloadBtn.href = data.image_url;
+      downloadBtn.style.display = "inline";
+
+      showToast("✅ Image generated successfully!", "success");
+    } else {
+      showToast("❌ Failed to generate image", "error");
+    }
+
+  } catch (err) {
+    showToast("⚠️ Server error. Try again!", "error");
+  }
+
+  // 🔓 Enable UI
+  loader.style.display = "none";
+  btn.disabled = false;
+  promptInput.disabled = false;
+});
+</script>
+
+</body>
+</html>
