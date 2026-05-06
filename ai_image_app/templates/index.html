@@ -29,14 +29,19 @@ body {
 }
 
 /* Input */
-input {
+textarea {
   width: 80%;
   padding: 12px;
   border-radius: 10px;
   border: none;
   outline: none;
-  margin-bottom: 15px;
   font-size: 16px;
+  resize: none;
+
+  min-height: 80px;
+  max-height: 120px;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
 /* Button */
@@ -129,7 +134,7 @@ img {
 
   <form id="generateForm">
     {% csrf_token %}
-    <input type="text" id="prompt" name="prompt" placeholder="Describe your image..." required />
+    <textarea id="prompt" name="prompt" placeholder="Describe your image..." rows="3" required></textarea>
     <br>
     <button type="submit" id="generateBtn">Generate</button>
   </form>
